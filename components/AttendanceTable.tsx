@@ -71,16 +71,21 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({ attendanceLog, isMobi
     <div className="bg-slate-800 p-4 sm:p-6 rounded-xl shadow-2xl">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-3 sm:mb-4">
         <h2 className="text-lg sm:text-xl font-semibold text-sky-300">Attendance Log</h2>
-        <button
-          onClick={downloadCSV}
-          disabled={attendanceLog.length === 0}
-          className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center sm:justify-start space-x-2 text-sm"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-          </svg>
-          <span>Download CSV</span>
-        </button>
+        <div className="flex flex-col items-end gap-2">
+          <button
+            onClick={downloadCSV}
+            disabled={attendanceLog.length === 0}
+            className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center sm:justify-start space-x-2 text-sm"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+            <span>Download Latest CSV</span>
+          </button>
+          <p className="text-xs text-slate-400">
+            CSV updates automatically with each new attendance
+          </p>
+        </div>
       </div>
       {attendanceLog.length === 0 ? (
         <p className="text-slate-400 text-center py-4 text-sm sm:text-base">No attendance records yet. Recognized faces will appear here.</p>

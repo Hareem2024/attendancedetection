@@ -25,27 +25,119 @@ const App: React.FC = () => {
     setRegisteredUsers(prevUsers => [...prevUsers, { name, descriptor }]);
   }, []);
 
+  // Function to update CSV file
+  const updateCSV = useCallback((records: AttendanceRecord[]) => {
+    try {
+      // Format the data
+      const headers = "Name,Date,Time\n";
+      const rows = records
+        .map(record => {
+          const date = record.timestamp.toLocaleDateString();
+          const time = record.timestamp.toLocaleTimeString();
+          return `"${record.name}","${date}","${time}"`;
+        })
+        .join("\n");
+      const csvContent = headers + rows;
+
+      // Create blob with BOM for Excel compatibility
+      const BOM = "\uFEFF";
+      const blob = new Blob([BOM + csvContent], { 
+        type: 'text/csv;charset=utf-8;' 
+      });
+
+      // Create a temporary link element
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      // Set link properties
+      link.href = url;
+      link.download = `attendance_log_${new Date().toISOString().split('T')[0]}.csv`;
+      
+      // Append link to body
+      document.body.appendChild(link);
+      
+      // Trigger download
+      if (isMobile) {
+        // For mobile devices, create a data URL
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const dataUrl = e.target?.result as string;
+          const newWindow = window.open();
+          if (newWindow) {
+            newWindow.document.write(`
+              <html>
+                <head>
+                  <title>Attendance Log Updated</title>
+                  <meta name="viewport" content="width=device-width, initial-scale=1">
+                  <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
+                    .download-btn {
+                      background-color: #4CAF50;
+                      color: white;
+                      padding: 10px 20px;
+                      border: none;
+                      border-radius: 5px;
+                      cursor: pointer;
+                      font-size: 16px;
+                      margin: 20px 0;
+                    }
+                    .download-btn:hover {
+                      background-color: #45a049;
+                    }
+                  </style>
+                </head>
+                <body>
+                  <h2>Attendance Log Updated</h2>
+                  <p>Click the button below to download the updated attendance log:</p>
+                  <a href="${dataUrl}" download="attendance_log.csv" class="download-btn">
+                    Download Updated CSV
+                  </a>
+                </body>
+              </html>
+            `);
+          }
+        };
+        reader.readAsDataURL(blob);
+      } else {
+        // For desktop, trigger click
+        link.click();
+      }
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error("Error updating CSV:", error);
+    }
+  }, [isMobile]);
+
   const handleFaceRecognized = useCallback((name: string) => {
     setAttendanceLog(prevLog => {
       const now = Date.now();
       const lastLoggedTime = lastLoggedTimestamps[name] || 0;
 
       if (now - lastLoggedTime < ATTENDANCE_COOLDOWN_MS) {
-         // console.log(`User ${name} recognized but within cooldown period.`);
         return prevLog;
       }
       
-      // console.log(`Logging attendance for ${name}`);
       setLastLoggedTimestamps(prevTimestamps => ({ ...prevTimestamps, [name]: now }));
       
       const newRecord: AttendanceRecord = {
-        id: `${name}-${now}`, // Simple unique ID
+        id: `${name}-${now}`,
         name,
         timestamp: new Date(),
       };
-      return [newRecord, ...prevLog]; // Add to top of the log
+      
+      const updatedLog = [newRecord, ...prevLog];
+      
+      // Update CSV file with new record
+      updateCSV(updatedLog);
+      
+      return updatedLog;
     });
-  }, [lastLoggedTimestamps]);
+  }, [lastLoggedTimestamps, updateCSV]);
 
   useEffect(() => {
     // Load registered users from localStorage on mount (optional persistence)
