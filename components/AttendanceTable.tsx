@@ -12,22 +12,58 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({ attendanceLog, isMobi
       alert("No attendance data to download.");
       return;
     }
-    const headers = "Name,Timestamp\n";
-    const rows = attendanceLog
-      .map(record => `"${record.name}","${record.timestamp.toLocaleString()}"`)
-      .join("\n");
-    const csvContent = headers + rows;
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    if (link.download !== undefined) {
+
+    try {
+      // Format the data
+      const headers = "Name,Date,Time\n";
+      const rows = attendanceLog
+        .map(record => {
+          const date = record.timestamp.toLocaleDateString();
+          const time = record.timestamp.toLocaleTimeString();
+          return `"${record.name}","${date}","${time}"`;
+        })
+        .join("\n");
+      const csvContent = headers + rows;
+
+      // Create blob with BOM for Excel compatibility
+      const BOM = "\uFEFF";
+      const blob = new Blob([BOM + csvContent], { 
+        type: 'text/csv;charset=utf-8;' 
+      });
+
+      // Create download link
+      const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
+      
+      // Set link properties
       link.setAttribute("href", url);
-      link.setAttribute("download", "attendance_log.csv");
-      link.style.visibility = 'hidden';
+      link.setAttribute("download", `attendance_log_${new Date().toISOString().split('T')[0]}.csv`);
+      
+      // Handle mobile devices
+      if (isMobile) {
+        // For mobile, open in new tab
+        link.setAttribute("target", "_blank");
+        link.setAttribute("rel", "noopener noreferrer");
+      } else {
+        // For desktop, use hidden link
+        link.style.visibility = 'hidden';
+      }
+
+      // Trigger download
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+
+      // Cleanup
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 100);
+
+      // Show success message
+      alert("Attendance log downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading CSV:", error);
+      alert("Failed to download attendance log. Please try again.");
     }
   };
 
