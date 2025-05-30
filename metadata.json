@@ -1,0 +1,8 @@
+
+{
+  "name": "Face Recognition Attendance System",
+  "description": "An application that uses face recognition via webcam to automatically mark attendance, log entries, and allow CSV export of attendance data.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
