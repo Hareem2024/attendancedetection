@@ -5,6 +5,8 @@ import RegistrationPanel from './components/RegistrationPanel';
 import AttendanceTable from './components/AttendanceTable';
 import { ATTENDANCE_COOLDOWN_MS } from './constants';
 
+const API_URL = 'http://localhost:5000/api';
+
 const App: React.FC = () => {
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
   const [attendanceLog, setAttendanceLog] = useState<AttendanceRecord[]>([]);
@@ -113,6 +115,43 @@ const App: React.FC = () => {
     }
   }, [isMobile]);
 
+  // Load attendance records from server
+  useEffect(() => {
+    const fetchAttendanceRecords = async () => {
+      try {
+        const response = await fetch(`${API_URL}/attendance`);
+        const data = await response.json();
+        setAttendanceLog(data.map((record: any) => ({
+          id: record._id,
+          name: record.name,
+          timestamp: new Date(record.timestamp)
+        })));
+      } catch (error) {
+        console.error('Error fetching attendance records:', error);
+      }
+    };
+
+    fetchAttendanceRecords();
+  }, []);
+
+  // Save attendance record to server
+  const saveAttendanceRecord = async (record: AttendanceRecord) => {
+    try {
+      await fetch(`${API_URL}/attendance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: record.name,
+          timestamp: record.timestamp
+        }),
+      });
+    } catch (error) {
+      console.error('Error saving attendance record:', error);
+    }
+  };
+
   const handleFaceRecognized = useCallback((name: string) => {
     setAttendanceLog(prevLog => {
       const now = Date.now();
@@ -131,6 +170,9 @@ const App: React.FC = () => {
       };
       
       const updatedLog = [newRecord, ...prevLog];
+      
+      // Save to server
+      saveAttendanceRecord(newRecord);
       
       // Update CSV file with new record
       updateCSV(updatedLog);
