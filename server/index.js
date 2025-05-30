@@ -1,9 +1,7 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
-
-dotenv.config();
+const fs = require('fs').promises;
+const path = require('path');
 
 const app = express();
 
@@ -11,25 +9,34 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/attendance-system')
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// File path for storing attendance records
+const DATA_FILE = path.join(__dirname, 'attendance.json');
 
-// Define Attendance Record Schema
-const attendanceSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  timestamp: { type: Date, required: true },
-  date: { type: String, required: true },
-  time: { type: String, required: true }
-});
+// Ensure the data file exists
+async function ensureDataFile() {
+  try {
+    await fs.access(DATA_FILE);
+  } catch {
+    await fs.writeFile(DATA_FILE, JSON.stringify([]));
+  }
+}
 
-const Attendance = mongoose.model('Attendance', attendanceSchema);
+// Read attendance records
+async function readRecords() {
+  await ensureDataFile();
+  const data = await fs.readFile(DATA_FILE, 'utf8');
+  return JSON.parse(data);
+}
+
+// Write attendance records
+async function writeRecords(records) {
+  await fs.writeFile(DATA_FILE, JSON.stringify(records, null, 2));
+}
 
 // Routes
 app.get('/api/attendance', async (req, res) => {
   try {
-    const records = await Attendance.find().sort({ timestamp: -1 });
+    const records = await readRecords();
     res.json(records);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -42,15 +49,19 @@ app.post('/api/attendance', async (req, res) => {
     const date = new Date(timestamp).toLocaleDateString();
     const time = new Date(timestamp).toLocaleTimeString();
     
-    const record = new Attendance({
+    const records = await readRecords();
+    const newRecord = {
+      id: `${name}-${Date.now()}`,
       name,
       timestamp,
       date,
       time
-    });
+    };
     
-    await record.save();
-    res.status(201).json(record);
+    records.unshift(newRecord); // Add to beginning of array
+    await writeRecords(records);
+    
+    res.status(201).json(newRecord);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
