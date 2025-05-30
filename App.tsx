@@ -205,6 +205,9 @@ const App: React.FC = () => {
     }
   }, [registeredUsers]);
 
+  const handleAttendanceRecord = (record: AttendanceRecord) => {
+    setAttendanceLog(prev => [record, ...prev]);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-700 text-gray-100 flex flex-col items-center p-2 sm:p-4 space-y-4 sm:space-y-6">
@@ -230,6 +233,7 @@ const App: React.FC = () => {
             registeredUsers={registeredUsers}
             onModelsLoaded={setIsModelsLoaded}
             isMobile={isMobile}
+            onAttendanceRecord={handleAttendanceRecord}
           />
         </div>
         

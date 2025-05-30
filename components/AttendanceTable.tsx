@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { AttendanceRecord } from '../types';
 
 interface AttendanceTableProps {
@@ -7,6 +7,23 @@ interface AttendanceTableProps {
 }
 
 const AttendanceTable: React.FC<AttendanceTableProps> = ({ attendanceLog, isMobile }) => {
+  const [attendanceLogState, setAttendanceLog] = useState<AttendanceRecord[]>(attendanceLog);
+
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const response = await fetch('/.netlify/functions/attendance');
+        if (!response.ok) throw new Error('Failed to fetch attendance records');
+        const data = await response.json();
+        setAttendanceLog(data);
+      } catch (error) {
+        console.error('Error fetching attendance:', error);
+      }
+    };
+
+    fetchAttendance();
+  }, []);
+
   const downloadCSV = () => {
     if (attendanceLog.length === 0) {
       alert("No attendance data to download.");

@@ -7,9 +7,10 @@ interface WebcamDisplayProps {
   registeredUsers: RegisteredUser[];
   onModelsLoaded: (loaded: boolean) => void;
   isMobile: boolean;
+  onAttendanceRecord: (record: any) => void;
 }
 
-const WebcamDisplay: React.FC<WebcamDisplayProps> = ({ onFaceRecognized, registeredUsers, onModelsLoaded, isMobile }) => {
+const WebcamDisplay: React.FC<WebcamDisplayProps> = ({ onFaceRecognized, registeredUsers, onModelsLoaded, isMobile, onAttendanceRecord }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -191,6 +192,30 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({ onFaceRecognized, registe
       processingFrame.current = false;
     }
   }, [faceMatcher, onFaceRecognized, isMobile]);
+
+  const saveAttendance = async (name: string) => {
+    try {
+      const response = await fetch('/.netlify/functions/attendance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save attendance record');
+      }
+
+      const newRecord = await response.json();
+      onAttendanceRecord(newRecord);
+    } catch (error) {
+      console.error('Error saving attendance:', error);
+    }
+  };
 
   useEffect(() => {
     loadModels();
